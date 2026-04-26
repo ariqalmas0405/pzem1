@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>KwH Pascabayar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      font-family: Square Bitter;
+      text-align: center;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      margin-top: 30px;
+    }
+
+    .card {
+      display: inline-block;
+      background: white;
+      padding: 20px;
+      margin: 15px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 200px;
+    }
+
+    .value {
+      font-size: 20px;
+      font-weight: bold;
+      color: blue;
+    }
+
+    #dashboard {
+      display: none;
+    }
+
+    #loginForm {
+      max-width: 400px;
+      margin: 80px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      background: #1e88e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>KwH Pascabayar</h1>
+
+<!-- LOGIN -->
+<div id="loginForm">
+  <input type="email" id="email" placeholder="Enter Email" />
+  <input type="password" id="password" placeholder="Enter Password" />
+  <button id="loginBtn">Login</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+  <div class="card">
+    <h3>Voltage</h3>
+    <div class="value" id="voltage">-</div>
+  </div>
+
+  <div class="card">
+    <h3>Current</h3>
+    <div class="value" id="current">-</div>
+  </div>
+
+  <div class="card">
+    <h3>Power</h3>
+    <div class="value" id="power">-</div>
+  </div>
+
+  <div class="card">
+    <h3>Energy</h3>
+    <div class="value" id="energy">-</div>
+  </div>
+
+  <div class="card">
+    <h3>Frequency</h3>
+    <div class="value" id="frequency">-</div>
+  </div>
+
+  <div class="card">
+    <h3>Power Factor</h3>
+    <div class="value" id="pf">-</div>
+  </div>
+
+  <div class="card">
+    <h3>Biaya</h3>
+    <div class="value" id="biaya">-</div>
+  </div>
+
+  <button id="logoutBtn">Logout</button>
+
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB_zewOQrIozWGldGAdaTtyN0zCAqoH3DQ",
+  authDomain: "pzem1-5a8c2.firebaseapp.com",
+  databaseURL: "https://pzem1-5a8c2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pzem1-5a8c2",
+  storageBucket: "pzem1-5a8c2.firebasestorage.app",
+  messagingSenderId: "842178237968",
+  appId: "1:842178237968:web:0fc99a7339ace8bb1e1c95"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const allowedEmail = "ariqalmas045@gmail.com";
+const allowedPassword = "16557855664";
+
+const loginForm = document.getElementById("loginForm");
+const dashboard = document.getElementById("dashboard");
+
+document.getElementById("loginBtn").addEventListener("click", () => {
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    alert("Isi email dan password");
+    return;
+  }
+
+  if(email === allowedEmail && password === allowedPassword){
+
+    firebase.auth().signInWithEmailAndPassword(email, password)
+      .then(() => {
+        loginForm.style.display = "none";
+        dashboard.style.display = "block";
+        startMonitoring();
+      })
+      .catch(err => alert(err.message));
+
+  } else {
+    alert("Login salah!");
+  }
+});
+
+function startMonitoring(){
+
+  const db = firebase.database();
+  const ref = db.ref("pzem");
+
+  ref.on("value", (snapshot) => {
+    const d = snapshot.val();
+
+    if(!d) return;
+
+    document.getElementById("voltage").innerText = d.voltage + " V";
+    document.getElementById("current").innerText = d.current + " A";
+    document.getElementById("power").innerText = d.power + " W";
+    document.getElementById("energy").innerText = d.energy + " kWh";
+    document.getElementById("frequency").innerText = d.frequency + " Hz";
+    document.getElementById("pf").innerText = d.pf;
+    document.getElementById("biaya").innerText = "Rp " + d.biaya;
+  });
+}
+
+// LOGOUT
+document.getElementById("logoutBtn").onclick = () => {
+  firebase.auth().signOut()
+    .then(() => {
+      dashboard.style.display = "none";
+      loginForm.style.display = "block";
+    });
+};
+</script>
+
+</body>
+</html>
