@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Pelanggan Pascabayar</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      text-align:center;
+      background: linear-gradient(135deg, #2f6f66, #18233e, #46ae73, #4c893c, #0a1411);
+      margin:0;
+      padding:20px;
+      color:white;
+    }
+
+    .halaman{
+      display:none;
+    }
+
+    #halamanUtama{
+      display:block;
+    }
+
+    h1,h2{
+      margin-bottom:20px;
+    }
+
+    .box{
+      background:white;
+      color:black;
+      max-width:1200px;
+      margin:auto;
+      padding:25px;
+      border-radius:15px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:10px;
+      margin-bottom:20px;
+    }
+
+    input{
+      padding:12px;
+      border:1px solid #ccc;
+      border-radius:8px;
+      font-size:16px;
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    button{
+      padding:12px 18px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:16px;
+    }
+
+    .tambah-btn{
+      background:#2563eb;
+      color:white;
+      width:100%;
+      margin-top:10px;
+    }
+
+    .pelanggan-container{
+      display:flex;
+      justify-content:left;
+      align-items:center;
+      gap:12px;
+      margin:12px 0;
+      flex-wrap:wrap;
+    }
+
+    .pelanggan-btn{
+      background:#2563eb;
+      color:white;
+      min-width:800px;
+    }
+
+    .checklist-btn{
+      color:white;
+      min-width:180px;
+    }
+
+    .sudah{
+      background:green;
+    }
+
+    .belum{
+      background:red;
+    }
+
+    .hapus-btn{
+      background:#444;
+      color:white;
+    }
+
+    .detail-box{
+      background:white;
+      color:black;
+      max-width:1200px;
+      margin:auto;
+      padding:30px;
+      border-radius:15px;
+    }
+
+    .info{
+      text-align:left;
+      line-height:1.8;
+      margin-bottom:20px;
+      font-size:18px;
+    }
+
+    .sensor-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+      gap:15px;
+    }
+
+    .sensor-card{
+      background:#f4f6fb;
+      padding:18px;
+      border-radius:12px;
+    }
+
+    .sensor-card h3{
+      margin-bottom:10px;
+      color:#333;
+    }
+
+    .sensor-card p{
+      color:#2563eb;
+      font-weight:bold;
+      font-size:18px;
+    }
+
+    .back-btn{
+      background:#2563eb;
+      color:white;
+      margin-top:25px;
+    }
+
+    .warning{
+      margin-top:20px;
+      color:red;
+      font-weight:bold;
+      font-size:18px;
+    }
+
+    .warning-badge{
+      background:yellow;
+      color:red;
+      font-weight:bold;
+      padding:12px 18px;
+      border-radius:8px;
+      display:inline-block;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HALAMAN UTAMA -->
+<div id="halamanUtama" class="halaman">
+
+  <h1>Dashboard Pelanggan Pascabayar</h1>
+
+  <div class="box">
+
+    <h2>Tambah Pelanggan Baru</h2>
+
+    <div class="form-grid">
+      <input type="text" id="inputNama" placeholder="Nama Pelanggan">
+      <input type="text" id="inputAlamat" placeholder="Alamat">
+      <input type="text" id="inputIDPEL" placeholder="IDPEL">
+      <input type="text" id="inputVA" placeholder="Golongan VA">
+    </div>
+
+    <button class="tambah-btn" onclick="tambahPelanggan()">
+      Tambah Pelanggan
+    </button>
+
+    <hr style="margin:25px 0;">
+
+    <h2>Daftar Pelanggan</h2>
+
+    <div id="daftarPelanggan"></div>
+
+  </div>
+</div>
+
+<!-- HALAMAN DETAIL -->
+<div id="halamanDetail" class="halaman">
+
+  <div class="detail-box">
+
+    <h2 id="judulPelanggan">Data Pelanggan</h2>
+
+    <div class="info">
+      <p><b>Nama :</b> <span id="nama"></span></p>
+      <p><b>Golongan VA :</b> <span id="va"></span></p>
+      <p><b>Alamat :</b> <span id="alamat"></span></p>
+      <p><b>IDPEL :</b> <span id="idpel"></span></p>
+    </div>
+
+    <div class="sensor-grid">
+      <div class="sensor-card"><h3>Tegangan</h3><p id="tegangan">-</p></div>
+      <div class="sensor-card"><h3>Arus</h3><p id="arus">-</p></div>
+      <div class="sensor-card"><h3>Daya</h3><p id="daya">-</p></div>
+      <div class="sensor-card"><h3>Cos Phi</h3><p id="cosphi">-</p></div>
+      <div class="sensor-card"><h3>Frekuensi</h3><p id="frekuensi">-</p></div>
+      <div class="sensor-card"><h3>Energi Total</h3><p id="energiTotal">-</p></div>
+      <div class="sensor-card"><h3>Energi Bulan Ini</h3><p id="energiBulanIni">-</p></div>
+      <div class="sensor-card"><h3>Biaya Bulan Ini</h3><p id="biayaBulanIni">-</p></div>
+    </div>
+
+    <div id="peringatan" class="warning"></div>
+
+    <button class="back-btn" onclick="pindahHalaman('halamanUtama')">
+      Kembali ke Dashboard
+    </button>
+
+  </div>
+</div>
+
+<script>
+/* ================= FIREBASE CONFIG ================= */
+const firebaseConfig = {
+ apiKey: "AIzaSyB_zewOQrIozWGldGAdaTtyN0zCAqoH3DQ",
+  authDomain: "pzem1-5a8c2.firebaseapp.com",
+  databaseURL: "https://pzem1-5a8c2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pzem1-5a8c2",
+  storageBucket: "pzem1-5a8c2.firebasestorage.app",
+  messagingSenderId: "842178237968",
+  appId: "1:842178237968:web:0fc99a7339ace8bb1e1c95"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let statusWarningAriq = false;
+
+/* ================= INISIALISASI ARIQ ================= */
+function inisialisasiAriq(){
+
+  db.ref("pelangganUtama").once("value", function(snapshot){
+
+        if(!snapshot.exists()){
+
+      const sekarang = new Date();
+
+      db.ref("pelangganUtama").set({
+        nama: "Ariq Almas Zaidan",
+        alamat: "Jl. Menco No.14",
+        idpel: "16557855661",
+        va: "R-1 Non Subsidi 900 VA",
+
+        /* STATUS PEMBAYARAN */
+        statusBayar: false,
+
+        /* TAGIHAN BULANAN */
+        bulanTagihan: sekarang.getMonth() + 1,
+        tahunTagihan: sekarang.getFullYear()
+      });
+
+    }
+
+  });
+
+}
+
+/* ================= CEK WARNING ARIQ ================= */
+function cekResetBulanan(){
+
+  db.ref("pelangganUtama").once("value", function(snapshot){
+
+    const data = snapshot.val();
+
+    if(!data) return;
+
+    const sekarang = new Date();
+    const bulanSekarang = sekarang.getMonth() + 1;
+    const tahunSekarang = sekarang.getFullYear();
+
+    if(
+      data.bulanTagihan !== bulanSekarang ||
+      data.tahunTagihan !== tahunSekarang
+    ){
+
+      db.ref("pelangganUtama").update({
+        statusBayar: false,
+        bulanTagihan: bulanSekarang,
+        tahunTagihan: tahunSekarang
+      });
+
+    }
+
+  });
+
+}
+function cekWarningAriq(){
+
+  db.ref("pzem").on("value", function(snapshot){
+
+    const d = snapshot.val();
+
+    if(!d){
+      statusWarningAriq = false;
+      renderPelanggan();
+      return;
+    }
+
+    if(
+      d.current > 2 ||
+      d.voltage == 0 ||
+      (d.voltage > 0 && d.voltage < 200) ||
+      d.frequency < 49 ||
+      d.frequency > 51
+    ){
+      statusWarningAriq = true;
+    }
+
+    else{
+      statusWarningAriq = false;
+    }
+
+    renderPelanggan();
+
+  });
+
+}
+
+
+/* ================= NAVIGASI ================= */
+function pindahHalaman(targetId){
+
+  document.querySelectorAll(".halaman").forEach(function(halaman){
+    halaman.style.display = "none";
+  });
+
+  document.getElementById(targetId).style.display = "block";
+
+}
+
+/* ================= TAMBAH PELANGGAN ================= */
+function tambahPelanggan(){
+
+  const nama = document.getElementById("inputNama").value.trim();
+  const alamat = document.getElementById("inputAlamat").value.trim();
+  const idpel = document.getElementById("inputIDPEL").value.trim();
+  const va = document.getElementById("inputVA").value.trim();
+
+  if(!nama || !alamat || !idpel || !va){
+    alert("Semua data wajib diisi!");
+    return;
+  }
+
+  const sekarang = new Date();
+
+  db.ref("pelanggan").push({
+    nama: nama,
+    alamat: alamat,
+    idpel: idpel,
+    va: va,
+
+    statusBayar: false,
+    bulanTagihan: sekarang.getMonth() + 1,
+    tahunTagihan: sekarang.getFullYear()
+  });
+
+  document.getElementById("inputNama").value = "";
+  document.getElementById("inputAlamat").value = "";
+  document.getElementById("inputIDPEL").value = "";
+  document.getElementById("inputVA").value = "";
+
+  alert("Pelanggan berhasil ditambahkan!");
+
+}
+
+/* ================= CHECKLIST ================= */
+function togglePembayaranAriq(statusSekarang){
+
+  db.ref("pelangganUtama").update({
+    statusBayar: !statusSekarang
+  });
+
+}
+
+function togglePembayaranDummy(id, statusSekarang){
+
+  db.ref("pelanggan/" + id).update({
+    statusBayar: !statusSekarang
+  });
+
+}
+
+/* ================= HAPUS ================= */
+function hapusPelanggan(id){
+
+  if(confirm("Yakin ingin menghapus pelanggan ini?")){
+    db.ref("pelanggan/" + id).remove();
+  }
+
+}
+
+/* ================= RENDER ================= */
+function renderPelanggan(){
+
+  const daftar = document.getElementById("daftarPelanggan");
+
+  db.ref().on("value", function(snapshotGlobal){
+
+    daftar.innerHTML = "";
+
+    const ariqData = snapshotGlobal.child("pelangganUtama").val();
+    const dataDummy = snapshotGlobal.child("pelanggan").val();
+
+    /* ARIQ */
+    if(ariqData){
+
+      daftar.innerHTML += `
+        <div class="pelanggan-container">
+
+          <button class="pelanggan-btn" onclick="tampilDetailAriq()">
+            ${ariqData.nama}
+          </button>
+
+          <button class="checklist-btn ${ariqData.statusBayar ? 'sudah':'belum'}"
+            onclick="togglePembayaranAriq(${ariqData.statusBayar})">
+
+            ${ariqData.statusBayar ? "✅ Sudah Bayar":"❌ Belum Bayar"}
+
+          </button>
+
+          ${statusWarningAriq ? `
+            <span class="warning-badge">⚠ WARNING</span>
+          ` : ""}
+
+        </div>
+      `;
+
+    }
+
+    /* DUMMY */
+    if(dataDummy){
+
+      for(let key in dataDummy){
+
+        daftar.innerHTML += `
+          <div class="pelanggan-container">
+
+            <button class="pelanggan-btn" onclick="tampilDetailDummy('${key}')">
+              ${dataDummy[key].nama}
+            </button>
+
+            <button class="checklist-btn ${dataDummy[key].statusBayar ? 'sudah':'belum'}"
+              onclick="togglePembayaranDummy('${key}', ${dataDummy[key].statusBayar})">
+
+              ${dataDummy[key].statusBayar ? "✅ Sudah Bayar":"❌ Belum Bayar"}
+
+            </button>
+
+            <button class="hapus-btn" onclick="hapusPelanggan('${key}')">
+              Hapus
+            </button>
+
+          </div>
+        `;
+
+      }
+
+    }
+
+  });
+
+}
+
+/* ================= DETAIL ARIQ ================= */
+function tampilDetailAriq(){
+
+  db.ref("pelangganUtama").once("value", function(snapshotPelanggan){
+
+    const ariqData = snapshotPelanggan.val();
+    if(!ariqData) return;
+
+    document.getElementById("judulPelanggan").innerText = ariqData.nama;
+    document.getElementById("nama").innerText = ariqData.nama;
+    document.getElementById("va").innerText = ariqData.va;
+    document.getElementById("alamat").innerText = ariqData.alamat;
+    document.getElementById("idpel").innerText = ariqData.idpel;
+
+    db.ref("pzem").on("value", function(snapshotPzem){
+
+      const d = snapshotPzem.val();
+      if(!d) return;
+
+      /* ================= TAMPILKAN SENSOR ================= */
+      document.getElementById("tegangan").innerText = d.voltage + " V";
+      document.getElementById("arus").innerText = d.current + " A";
+      document.getElementById("daya").innerText = d.power + " W";
+      document.getElementById("cosphi").innerText = d.pf;
+      document.getElementById("frekuensi").innerText = d.frequency + " Hz";
+      document.getElementById("energiTotal").innerText = d.energiTotal + " kWh";
+      document.getElementById("energiBulanIni").innerText = d.energiBulanIni + " kWh";
+      document.getElementById("biayaBulanIni").innerText = "Rp " + d.biayaBulanIni;
+
+      /* ================= GABUNGKAN WARNING ================= */
+      let warningText = "";
+
+      const sekarang = new Date();
+      const hariIni = sekarang.getDate();
+
+      /* ===== WARNING PEMBAYARAN ===== */
+      if(!ariqData.statusBayar){
+        warningText += "⚠ Tagihan bulan ini belum dibayar.<br>";
+      }
+
+      if(hariIni > 20 && !ariqData.statusBayar){
+        warningText += "⚠ Pembayaran melewati jatuh tempo bulanan!<br>";
+      }
+
+      /* ===== WARNING SENSOR ===== */
+      if(d.current > 2){
+        warningText += "⚠ PERINGATAN: Arus melebihi 2A! Indikasi potensi pencurian listrik.<br>";
+      }
+
+      if(d.voltage == 0){
+        warningText += "⚠ PERINGATAN: Listrik Padam.<br>";
+      }
+
+      if(d.voltage > 0 && d.voltage < 200){
+        warningText += "⚠ PERINGATAN: Low Volt.<br>";
+      }
+
+      if(d.frequency > 1 && d.frequency < 49){
+        warningText += "⚠ PERINGATAN: Low Frequency.<br>";
+      }
+
+      if(d.frequency > 51){
+        warningText += "⚠ PERINGATAN: Over Frequency.<br>";
+      }
+
+      /* ===== TAMPILKAN SEMUA ===== */
+      document.getElementById("peringatan").innerHTML = warningText;
+
+    });
+
+  });
+
+  pindahHalaman("halamanDetail");
+}
+
+/* ================= DETAIL DUMMY ================= */
+function tampilDetailDummy(id){
+
+  db.ref("pelanggan/" + id).once("value", function(snapshot){
+
+    const d = snapshot.val();
+
+    if(!d) return;
+
+    document.getElementById("judulPelanggan").innerText = d.nama;
+    document.getElementById("nama").innerText = d.nama;
+    document.getElementById("va").innerText = d.va;
+    document.getElementById("alamat").innerText = d.alamat;
+    document.getElementById("idpel").innerText = d.idpel;
+
+    document.getElementById("tegangan").innerText = "0 V";
+    document.getElementById("arus").innerText = "0 A";
+    document.getElementById("daya").innerText = "0 W";
+    document.getElementById("cosphi").innerText = "0";
+    document.getElementById("frekuensi").innerText = "0 Hz";
+    document.getElementById("energiTotal").innerText = "0 kWh";
+    document.getElementById("energiBulanIni").innerText = "0 kWh";
+    document.getElementById("biayaBulanIni").innerText = "Rp 0";
+    document.getElementById("peringatan").innerText = "";
+
+  });
+
+  pindahHalaman("halamanDetail");
+
+}
+
+/* ================= LOAD AWAL ================= */
+window.onload = function(){
+
+  cekResetBulanan();
+  inisialisasiAriq();
+  cekWarningAriq();
+  renderPelanggan();
+
+};
+</script>
+
+</body>
+</html>
