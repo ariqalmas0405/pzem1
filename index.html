@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Pelanggan Pascabayar</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *{ box-sizing:border-box; }
+    body{
+      font-family:Arial,sans-serif;
+      text-align:center;
+      background:linear-gradient(135deg,#2f6f66,#18233e,#46ae73,#4c893c,#0a1411);
+      margin:0; padding:20px; color:white;
+    }
+    .halaman{ display:none; }
+    #halamanUtama{ display:none; }
+    h1,h2{ margin-bottom:20px; }
+
+    .box{
+      background:white; color:black;
+      max-width:1200px; margin:auto;
+      padding:25px; border-radius:15px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.2);
+    }
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:10px; margin-bottom:20px;
+    }
+    input{
+      padding:12px; border:1px solid #ccc;
+      border-radius:8px; font-size:16px; width:100%;
+    }
+    button{
+      padding:12px 18px; border:none;
+      border-radius:8px; cursor:pointer; font-size:16px;
+    }
+    .tambah-btn{ background:#2563eb; color:white; width:100%; margin-top:10px; }
+    .pelanggan-container{
+      display:flex; justify-content:left;
+      align-items:center; gap:12px;
+      margin:12px 0; flex-wrap:wrap;
+    }
+    .pelanggan-btn{ background:#2563eb; color:white; min-width:800px; }
+    .checklist-btn{ color:white; min-width:180px; }
+    .sudah{ background:green; }
+    .belum{ background:red; }
+    .hapus-btn{ background:#444; color:white; }
+
+    .detail-box{
+      background:white; color:black;
+      max-width:1200px; margin:auto;
+      padding:30px; border-radius:15px;
+    }
+    .info{ text-align:left; line-height:1.8; margin-bottom:20px; font-size:18px; }
+
+    .sensor-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+      gap:15px;
+    }
+    .sensor-card{ background:#f4f6fb; padding:18px; border-radius:12px; }
+    .sensor-card h3{ margin-bottom:10px; color:#333; }
+    .sensor-card p{ color:#2563eb; font-weight:bold; font-size:18px; }
+
+    .back-btn{ background:#2563eb; color:white; margin-top:25px; }
+    .warning{ margin-top:20px; color:red; font-weight:bold; font-size:18px; }
+    .warning-badge{
+      background:yellow; color:red; font-weight:bold;
+      padding:12px 18px; border-radius:8px; display:inline-block;
+    }
+
+    #loginPage{
+      display:block; min-height:100vh;
+      display:flex; flex-direction:column;
+      justify-content:center; align-items:center;
+    }
+    #loginPage h1{ color:white; margin-bottom:25px; }
+    .login-box{
+      background:white; color:black; width:100%;
+      max-width:400px; padding:35px;
+      border-radius:15px; box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    }
+    .login-box input{
+      width:100%; padding:14px; margin:10px 0;
+      border:1px solid #ccc; border-radius:8px; font-size:16px;
+    }
+    .login-btn{
+      width:100%; background:#2563eb; color:white;
+      padding:14px; border:none; border-radius:8px;
+      font-size:16px; cursor:pointer; margin-top:10px;
+    }
+    .login-btn:hover{ background:#1d4ed8; }
+
+    .notif-banner{
+      display:none;
+      max-width:1200px;
+      margin:0 auto 16px auto;
+      padding:14px 20px;
+      border-radius:10px;
+      font-weight:bold;
+      font-size:16px;
+      text-align:left;
+    }
+    .notif-banner.listrik-padam{
+      background:#fef08a;
+      color:#78350f;
+      border:2px solid #facc15;
+    }
+    .notif-banner.overcurrent-aktif{
+      background:#fee2e2;
+      color:#991b1b;
+      border:2px solid #ef4444;
+    }
+    .notif-banner.info{
+      background:#dbeafe;
+      color:#1e3a8a;
+      border:2px solid #3b82f6;
+    }
+
+    .grafik-section{ margin-top:30px; text-align:left; }
+    .grafik-section h3{
+      color:#1e293b; font-size:18px;
+      margin-bottom:16px; padding-bottom:8px;
+      border-bottom:2px solid #e2e8f0;
+    }
+    .grafik-info{ font-size:12px; color:#64748b; margin-bottom:12px; }
+    .grafik-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:20px;
+    }
+    @media(max-width:700px){ .grafik-grid{ grid-template-columns:1fr; } }
+    .grafik-card{
+      background:#f8fafc;
+      border:1px solid #e2e8f0;
+      border-radius:12px; padding:16px;
+    }
+    .grafik-card h4{
+      margin:0 0 12px 0; font-size:14px;
+      color:#334155; font-weight:600;
+      text-transform:uppercase; letter-spacing:0.05em;
+    }
+    .grafik-card canvas{ width:100%!important; height:180px!important; }
+    .reset-grafik-btn{
+      background:#e2e8f0; color:#334155;
+      font-size:13px; padding:8px 14px;
+      margin-top:14px; border-radius:6px;
+    }
+    .reset-grafik-btn:hover{ background:#cbd5e1; }
+  </style>
+</head>
+<body>
+
+<div id="loginPage" style="display:flex;">
+  <h1>Login Dashboard Daftar Pelanggan Pascabayar</h1>
+  <div class="box" style="max-width:400px;margin-top:80px;">
+    <input type="email" id="email" placeholder="Masukkan ID / Email">
+    <input type="password" id="password" placeholder="Masukkan Password">
+    <button class="tambah-btn" onclick="loginDashboard()">Login</button>
+  </div>
+</div>
+
+<div id="halamanUtama" class="halaman">
+  <div id="bannerUtamaListrik" class="notif-banner listrik-padam">
+    ⚡ LISTRIK PADAM
+  </div>
+  <div id="bannerUtamaOvercurrent" class="notif-banner overcurrent-aktif">
+    ⚠️ OVERCURRENT TERDETEKSI - Relay telah diputus. Reset untuk memulihkan.
+  </div>
+
+  <h1>Dashboard Pelanggan Pascabayar</h1>
+  <div class="box">
+    <h2>Tambah Pelanggan Baru</h2>
+    <div class="form-grid">
+      <input type="text" id="inputNama" placeholder="Nama Pelanggan">
+      <input type="text" id="inputAlamat" placeholder="Alamat">
+      <input type="text" id="inputIDPEL" placeholder="IDPEL">
+      <input type="text" id="inputVA" placeholder="Golongan VA">
+    </div>
+    <button class="tambah-btn" onclick="tambahPelanggan()">Tambah Pelanggan</button>
+    <hr style="margin:25px 0;">
+    <h2>Daftar Pelanggan</h2>
+    <div id="daftarPelanggan"></div>
+  </div>
+  <button class="back-btn" onclick="logoutDashboard()">Logout</button>
+</div>
+
+<div id="halamanDetail" class="halaman">
+  <div id="bannerDetailListrik" class="notif-banner listrik-padam">
+    ⚡ LISTRIK PADAM
+  </div>
+  <div id="bannerDetailOvercurrent" class="notif-banner overcurrent-aktif">
+    ⚠️ OVERCURRENT TERDETEKSI - Relay telah diputus. Reset untuk memulihkan.
+  </div>
+
+  <div class="detail-box">
+    <h2 id="judulPelanggan">Data Pelanggan</h2>
+    <div class="info">
+      <p><b>Nama :</b> <span id="nama"></span></p>
+      <p><b>Golongan VA :</b> <span id="va"></span></p>
+      <p><b>Alamat :</b> <span id="alamat"></span></p>
+      <p><b>IDPEL :</b> <span id="idpel"></span></p>
+    </div>
+    <div class="sensor-grid">
+      <div class="sensor-card"><h3>Tegangan</h3><p id="tegangan">-</p></div>
+      <div class="sensor-card"><h3>Arus</h3><p id="arus">-</p></div>
+      <div class="sensor-card"><h3>Daya</h3><p id="daya">-</p></div>
+      <div class="sensor-card"><h3>Cos Phi</h3><p id="cosphi">-</p></div>
+      <div class="sensor-card"><h3>Frekuensi</h3><p id="frekuensi">-</p></div>
+      <div class="sensor-card"><h3>Energi Total</h3><p id="energiTotal">-</p></div>
+      <div class="sensor-card"><h3>Energi Bulan Ini</h3><p id="energiBulanIni">-</p></div>
+      <div class="sensor-card"><h3>Biaya Bulan Ini</h3><p id="biayaBulanIni">-</p></div>
+    </div>
+    <div id="peringatan" class="warning"></div>
+
+    <div id="grafikSection" class="grafik-section" style="display:none;">
+      <h3>📈 Grafik Pembacaan Realtime</h3>
+      <div class="grafik-grid">
+        <div class="grafik-card"><h4>⚡ Tegangan (V)</h4><canvas id="chartTegangan"></canvas></div>
+        <div class="grafik-card"><h4>🔌 Arus (A)</h4><canvas id="chartArus"></canvas></div>
+        <div class="grafik-card"><h4>💡 Daya (W)</h4><canvas id="chartDaya"></canvas></div>
+        <div class="grafik-card"><h4>🔋 Energi Bulan Ini (kWh)</h4><canvas id="chartEnergi"></canvas></div>
+      </div>
+      <button class="reset-grafik-btn" onclick="resetGrafik()">🗑 Reset Grafik</button>
+    </div>
+
+    <button class="back-btn" onclick="kembaliDashboard()">Kembali ke Dashboard</button>
+  </div>
+</div>
+
+<script>
+const allowedEmail    = "ariqalmas045@gmail.com";
+const allowedPassword = "16557855664";
+
+function loginDashboard(){
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  if(!email || !password){ alert("Isi ID dan Password!"); return; }
+  if(email === allowedEmail && password === allowedPassword){
+    document.getElementById("loginPage").style.display    = "none";
+    document.getElementById("halamanUtama").style.display = "block";
+  } else {
+    alert("Login salah!");
+  }
+}
+
+function logoutDashboard(){
+  hentikanListenerPzem();
+  document.getElementById("loginPage").style.display     = "flex";
+  document.getElementById("halamanUtama").style.display  = "none";
+  document.getElementById("halamanDetail").style.display = "none";
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB_zewOQrIozWGldGAdaTtyN0zCAqoH3DQ",
+  authDomain: "pzem1-5a8c2.firebaseapp.com",
+  databaseURL: "https://pzem1-5a8c2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pzem1-5a8c2",
+  storageBucket: "pzem1-5a8c2.firebasestorage.app",
+  messagingSenderId: "842178237968",
+  appId: "1:842178237968:web:0fc99a7339ace8bb1e1c95"
+
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let statusWarningAriq   = false;
+let statusListrikPadam  = false;
+let statusOvercurrent   = false;
+
+let pzemListenerRef     = null;
+let pzemListenerCallback = null;
+
+let heartbeatInterval   = null;
+const HEARTBEAT_TIMEOUT = 15;
+
+function mulaiCekHeartbeat(){
+  if(heartbeatInterval) clearInterval(heartbeatInterval);
+
+  heartbeatInterval = setInterval(function(){
+    db.ref("pzem/heartbeat").once("value", function(snap){
+      const hbVal = snap.val();
+      if(!hbVal){
+        return;
+      }
+
+      const sekarang   = Math.floor(Date.now() / 1000);
+      const selisih    = sekarang - hbVal;
+      const padam      = selisih > HEARTBEAT_TIMEOUT;
+
+      if(padam !== statusListrikPadam){
+        statusListrikPadam = padam;
+        updateBannerListrik();
+        renderPelanggan();
+      }
+    });
+  }, 5000);
+}
+
+function updateBannerListrik(){
+  const display = statusListrikPadam ? "block" : "none";
+  document.getElementById("bannerUtamaListrik").style.display  = display;
+  document.getElementById("bannerDetailListrik").style.display = display;
+}
+
+function mulaiCekOvercurrent(){
+  db.ref("pzem/overcurrent").on("value", function(snap){
+    const val = snap.val();
+    statusOvercurrent = (val === true);
+    updateBannerOvercurrent();
+    renderPelanggan();
+  });
+}
+
+function updateBannerOvercurrent(){
+  const display = statusOvercurrent ? "block" : "none";
+  document.getElementById("bannerUtamaOvercurrent").style.display  = display;
+  document.getElementById("bannerDetailOvercurrent").style.display = display;
+}
+
+function hentikanListenerPzem(){
+  if(pzemListenerRef && pzemListenerCallback){
+    pzemListenerRef.off("value", pzemListenerCallback);
+    pzemListenerRef     = null;
+    pzemListenerCallback = null;
+  }
+}
+
+const MAX_POINTS = 90;
+
+let charts = { tegangan:null, arus:null, daya:null, energi:null };
+let grafikData = { labels:[], tegangan:[], arus:[], daya:[], energi:[] };
+let grafikSudahDibuat = false;
+
+function buatGrafik(){
+  if(grafikSudahDibuat) return;
+
+  const opsiUmum = {
+    responsive:true, maintainAspectRatio:false,
+    animation:{ duration:300 },
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{
+        ticks:{ maxTicksLimit:8, font:{size:10}, color:"#64748b" },
+        grid:{ color:"#e2e8f0" }
+      },
+      y:{
+        ticks:{ font:{size:10}, color:"#64748b" },
+        grid:{ color:"#e2e8f0" }
+      }
+    }
+  };
+
+  function buatDataset(data, warna){
+    return {
+      data, borderColor:warna,
+      backgroundColor: warna.replace(")",",0.08)").replace("rgb","rgba"),
+      borderWidth:2, pointRadius:2,
+      pointBackgroundColor:warna,
+      tension:0.3, fill:true
+    };
+  }
+
+  charts.tegangan = new Chart(
+    document.getElementById("chartTegangan").getContext("2d"),{
+      type:"line",
+      data:{ labels:grafikData.labels, datasets:[buatDataset(grafikData.tegangan,"rgb(37,99,235)")] },
+      options:{ ...opsiUmum, scales:{...opsiUmum.scales,
+        y:{...opsiUmum.scales.y, title:{display:true,text:"V",color:"#64748b",font:{size:11}}}}}
+    }
+  );
+  charts.arus = new Chart(
+    document.getElementById("chartArus").getContext("2d"),{
+      type:"line",
+      data:{ labels:grafikData.labels, datasets:[buatDataset(grafikData.arus,"rgb(249,115,22)")] },
+      options:{ ...opsiUmum, scales:{...opsiUmum.scales,
+        y:{...opsiUmum.scales.y, title:{display:true,text:"A",color:"#64748b",font:{size:11}}}}}
+    }
+  );
+  charts.daya = new Chart(
+    document.getElementById("chartDaya").getContext("2d"),{
+      type:"line",
+      data:{ labels:grafikData.labels, datasets:[buatDataset(grafikData.daya,"rgb(22,163,74)")] },
+      options:{ ...opsiUmum, scales:{...opsiUmum.scales,
+        y:{...opsiUmum.scales.y, title:{display:true,text:"W",color:"#64748b",font:{size:11}}}}}
+    }
+  );
+  charts.energi = new Chart(
+    document.getElementById("chartEnergi").getContext("2d"),{
+      type:"line",
+      data:{ labels:grafikData.labels, datasets:[buatDataset(grafikData.energi,"rgb(124,58,237)")] },
+      options:{ ...opsiUmum, scales:{...opsiUmum.scales,
+        y:{...opsiUmum.scales.y,
+          title:{display:true,text:"kWh",color:"#64748b",font:{size:11}},
+          ticks:{...opsiUmum.scales.y.ticks, callback:function(v){return v.toFixed(4);}}}}}
+    }
+  );
+
+  grafikSudahDibuat = true;
+}
+
+function tambahDataGrafik(tegangan, arus, daya, energi){
+  const jam = new Date();
+  const label = jam.getHours().toString().padStart(2,"0") + ":" +
+                jam.getMinutes().toString().padStart(2,"0") + ":" +
+                jam.getSeconds().toString().padStart(2,"0");
+
+  if(grafikData.labels.length >= MAX_POINTS){
+    grafikData.labels.shift();
+    grafikData.tegangan.shift();
+    grafikData.arus.shift();
+    grafikData.daya.shift();
+    grafikData.energi.shift();
+  }
+
+  grafikData.labels.push(label);
+  grafikData.tegangan.push(parseFloat(tegangan)||0);
+  grafikData.arus.push(parseFloat(arus)||0);
+  grafikData.daya.push(parseFloat(daya)||0);
+  grafikData.energi.push(parseFloat(energi)||0);
+
+  if(grafikSudahDibuat){
+    charts.tegangan.update();
+    charts.arus.update();
+    charts.daya.update();
+    charts.energi.update();
+  }
+}
+
+function resetGrafik(){
+  grafikData = { labels:[], tegangan:[], arus:[], daya:[], energi:[] };
+  if(grafikSudahDibuat){
+    charts.tegangan.update();
+    charts.arus.update();
+    charts.daya.update();
+    charts.energi.update();
+  }
+}
+
+function inisialisasiAriq(){
+  db.ref("pelangganUtama").once("value", function(snapshot){
+    if(!snapshot.exists()){
+      const now = new Date();
+      db.ref("pelangganUtama").set({
+        nama:"Ariq Almas Zaidan", alamat:"Jl. Menco No.14",
+        idpel:"16557855661", va:"R-1 Non Subsidi 900 VA",
+        statusBayar:false,
+        bulanTagihan:now.getMonth()+1, tahunTagihan:now.getFullYear()
+      });
+    }
+  });
+}
+
+function cekResetBulanan(){
+  db.ref("pelangganUtama").once("value", function(snapshot){
+    const data = snapshot.val();
+    if(!data) return;
+    const now = new Date();
+    if(data.bulanTagihan !== now.getMonth()+1 || data.tahunTagihan !== now.getFullYear()){
+      db.ref("pelangganUtama").update({
+        statusBayar:false,
+        bulanTagihan:now.getMonth()+1,
+        tahunTagihan:now.getFullYear()
+      });
+    }
+  });
+}
+
+function cekWarningAriq(){
+  db.ref("pzem").on("value", function(snapshot){
+    const d = snapshot.val();
+    if(!d){ statusWarningAriq=false; renderPelanggan(); return; }
+    statusWarningAriq = (
+      d.current > 2 || d.voltage == 0 ||
+      (d.voltage > 0 && d.voltage < 198) ||
+      d.frequency < 49 || d.frequency > 51
+    );
+    renderPelanggan();
+  });
+}
+
+function pindahHalaman(targetId){
+  document.querySelectorAll(".halaman").forEach(function(h){ h.style.display="none"; });
+  document.getElementById(targetId).style.display="block";
+}
+
+function kembaliDashboard(){
+  hentikanListenerPzem();
+
+  document.getElementById("grafikSection").style.display="none";
+
+  if(grafikSudahDibuat){
+    charts.tegangan.destroy();
+    charts.arus.destroy();
+    charts.daya.destroy();
+    charts.energi.destroy();
+    grafikSudahDibuat = false;
+  }
+
+  grafikData = { labels:[], tegangan:[], arus:[], daya:[], energi:[] };
+  pindahHalaman("halamanUtama");
+}
+
+function tambahPelanggan(){
+  const nama   = document.getElementById("inputNama").value.trim();
+  const alamat = document.getElementById("inputAlamat").value.trim();
+  const idpel  = document.getElementById("inputIDPEL").value.trim();
+  const va     = document.getElementById("inputVA").value.trim();
+  if(!nama||!alamat||!idpel||!va){ alert("Semua data wajib diisi!"); return; }
+  const now = new Date();
+  db.ref("pelanggan").push({
+    nama,alamat,idpel,va,statusBayar:false,
+    bulanTagihan:now.getMonth()+1,tahunTagihan:now.getFullYear()
+  });
+  ["inputNama","inputAlamat","inputIDPEL","inputVA"].forEach(function(id){
+    document.getElementById(id).value="";
+  });
+  alert("Pelanggan berhasil ditambahkan!");
+}
+
+function togglePembayaranAriq(statusSekarang){
+  db.ref("pelangganUtama").update({ statusBayar:!statusSekarang });
+}
+function togglePembayaranDummy(id,statusSekarang){
+  db.ref("pelanggan/"+id).update({ statusBayar:!statusSekarang });
+}
+
+function hapusPelanggan(id){
+  if(confirm("Yakin ingin menghapus pelanggan ini?")){
+    db.ref("pelanggan/"+id).remove();
+  }
+}
+
+function renderPelanggan(){
+  const daftar = document.getElementById("daftarPelanggan");
+  db.ref().on("value", function(snapshotGlobal){
+    daftar.innerHTML="";
+    const ariqData  = snapshotGlobal.child("pelangganUtama").val();
+    const dataDummy = snapshotGlobal.child("pelanggan").val();
+
+    if(ariqData){
+      let badges = "";
+      if(statusListrikPadam)  badges += `<span class="warning-badge">⚡ LISTRIK PADAM</span>`;
+      if(statusOvercurrent)   badges += `<span class="warning-badge">⚠ OVERCURRENT</span>`;
+      if(statusWarningAriq && !statusListrikPadam && !statusOvercurrent)
+                              badges += `<span class="warning-badge">⚠ WARNING</span>`;
+
+      daftar.innerHTML += `
+        <div class="pelanggan-container">
+          <button class="pelanggan-btn" onclick="tampilDetailAriq()">${ariqData.nama}</button>
+          <button class="checklist-btn ${ariqData.statusBayar?'sudah':'belum'}"
+            onclick="togglePembayaranAriq(${ariqData.statusBayar})">
+            ${ariqData.statusBayar?"✅ Sudah Bayar":"❌ Belum Bayar"}
+          </button>
+          ${badges}
+        </div>`;
+    }
+
+    if(dataDummy){
+      for(let key in dataDummy){
+        daftar.innerHTML += `
+          <div class="pelanggan-container">
+            <button class="pelanggan-btn" onclick="tampilDetailDummy('${key}')">
+              ${dataDummy[key].nama}
+            </button>
+            <button class="checklist-btn ${dataDummy[key].statusBayar?'sudah':'belum'}"
+              onclick="togglePembayaranDummy('${key}',${dataDummy[key].statusBayar})">
+              ${dataDummy[key].statusBayar?"✅ Sudah Bayar":"❌ Belum Bayar"}
+            </button>
+            <button class="hapus-btn" onclick="hapusPelanggan('${key}')">Hapus</button>
+          </div>`;
+      }
+    }
+  });
+}
+
+function bangunPeringatanPembayaran(dataPelanggan){
+  let warningText = "";
+  const now     = new Date();
+  const hariIni  = now.getDate();
+  const bulanIni = now.getMonth()+1;
+  const tahunIni = now.getFullYear();
+
+  const belumBayarBulanIni = !dataPelanggan.statusBayar;
+
+  if(belumBayarBulanIni && hariIni > 20){
+    warningText += "⚠ Pembayaran melewati jatuh tempo bulanan!<br>";
+  } else if(belumBayarBulanIni){
+    warningText += "⚠ Tagihan bulan ini belum dibayar.<br>";
+  }
+
+  return warningText;
+}
+
+function tampilDetailAriq(){
+  hentikanListenerPzem();
+
+  db.ref("pelangganUtama").once("value", function(snapshotPelanggan){
+    const ariqData = snapshotPelanggan.val();
+    if(!ariqData) return;
+
+    document.getElementById("judulPelanggan").innerText = ariqData.nama;
+    document.getElementById("nama").innerText           = ariqData.nama;
+    document.getElementById("va").innerText             = ariqData.va;
+    document.getElementById("alamat").innerText         = ariqData.alamat;
+    document.getElementById("idpel").innerText          = ariqData.idpel;
+
+    document.getElementById("peringatan").innerHTML = bangunPeringatanPembayaran(ariqData);
+
+    document.getElementById("grafikSection").style.display = "block";
+    pindahHalaman("halamanDetail");
+
+    setTimeout(function(){ buatGrafik(); }, 50);
+
+    pzemListenerRef = db.ref("pzem");
+    pzemListenerCallback = function(snapshotPzem){
+      const d = snapshotPzem.val();
+      if(!d) return;
+
+      document.getElementById("tegangan").innerText       = d.voltage        + " V";
+      document.getElementById("arus").innerText           = d.current        + " A";
+      document.getElementById("daya").innerText           = d.power          + " W";
+      document.getElementById("cosphi").innerText         = d.pf;
+      document.getElementById("frekuensi").innerText      = d.frequency      + " Hz";
+      document.getElementById("energiTotal").innerText    = d.energiTotal    + " kWh";
+      document.getElementById("energiBulanIni").innerText = d.energiBulanIni + " kWh";
+      document.getElementById("biayaBulanIni").innerText  = "Rp " + d.biayaBulanIni;
+
+      tambahDataGrafik(d.voltage, d.current, d.power, d.energiBulanIni);
+
+      let warningText = bangunPeringatanPembayaran(ariqData);
+
+      if(d.current > 2)
+        warningText += "⚠ PERINGATAN: Arus melebihi 2A! Indikasi potensi pencurian listrik.<br>";
+      if(d.voltage == 0)
+        warningText += "⚠ PERINGATAN: Listrik Padam.<br>";
+      if(d.voltage > 0 && d.voltage < 198)
+        warningText += "⚠ PERINGATAN: Low Volt.<br>";
+      if(d.frequency > 1 && d.frequency < 49)
+        warningText += "⚠ PERINGATAN: Low Frequency.<br>";
+      if(d.frequency > 51)
+        warningText += "⚠ PERINGATAN: Over Frequency.<br>";
+
+      document.getElementById("peringatan").innerHTML = warningText;
+    };
+
+    pzemListenerRef.on("value", pzemListenerCallback);
+  });
+}
+
+function tampilDetailDummy(id){
+  hentikanListenerPzem();
+
+  db.ref("pelanggan/"+id).once("value", function(snapshot){
+    const d = snapshot.val();
+    if(!d) return;
+
+    document.getElementById("judulPelanggan").innerText  = d.nama;
+    document.getElementById("nama").innerText            = d.nama;
+    document.getElementById("va").innerText              = d.va;
+    document.getElementById("alamat").innerText          = d.alamat;
+    document.getElementById("idpel").innerText           = d.idpel;
+
+    document.getElementById("tegangan").innerText        = "0 V";
+    document.getElementById("arus").innerText            = "0 A";
+    document.getElementById("daya").innerText            = "0 W";
+    document.getElementById("cosphi").innerText          = "0";
+    document.getElementById("frekuensi").innerText       = "0 Hz";
+    document.getElementById("energiTotal").innerText     = "0 kWh";
+    document.getElementById("energiBulanIni").innerText  = "0 kWh";
+    document.getElementById("biayaBulanIni").innerText   = "Rp 0";
+
+    document.getElementById("peringatan").innerHTML = bangunPeringatanPembayaran(d);
+
+    document.getElementById("grafikSection").style.display = "none";
+  });
+
+  pindahHalaman("halamanDetail");
+}
+
+window.onload = function(){
+  document.getElementById("loginPage").style.display     = "flex";
+  document.getElementById("halamanUtama").style.display  = "none";
+  document.getElementById("halamanDetail").style.display = "none";
+
+  ["bannerUtamaListrik","bannerUtamaOvercurrent",
+   "bannerDetailListrik","bannerDetailOvercurrent"].forEach(function(id){
+    document.getElementById(id).style.display = "none";
+  });
+
+  cekResetBulanan();
+  inisialisasiAriq();
+  cekWarningAriq();
+  renderPelanggan();
+
+  mulaiCekHeartbeat();
+  mulaiCekOvercurrent();
+};
+</script>
+</body>
+</html>
